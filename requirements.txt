@@ -1,4 +1,28 @@
-# 聊天机器人项目依赖
-openai>=0.27.0
-requests>=2.28.0
-python-dotenv>=1.0.0
+# AI聊天机器人依赖包 - 带任务管理功能
+
+# 核心依赖
+openai>=1.0.0          # OpenAI API客户端
+python-dotenv>=1.0.0   # 环境变量管理
+prompt-toolkit>=3.0.0  # 交互式命令行界面
+requests>=2.31.0       # HTTP请求库
+
+# 可选依赖（根据需要选择）
+anthropic              # Anthropic Claude API（如果使用）
+google-generativeai    # Google Gemini API（如果使用）
+
+# 开发和测试
+pytest>=7.0.0         # 测试框架
+black                 # 代码格式化
+flake8                # 代码检查
+
+# 日期时间处理
+python-dateutil>=2.8.0
+
+# JSON处理增强（可选）
+ujson                 # 快速JSON处理
+
+# 系统监控（可选）
+psutil               # 系统资源监控
+
+# 日志记录（可选）
+loguru               # 增强日志记录

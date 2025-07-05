@@ -1,0 +1,256 @@
+[
+  {
+    "id": "morning_greeting",
+    "title": "温馨早安问候",
+    "description": "每天早上8:30主动向用户问好，关心睡眠质量，询问今天的心情和计划",
+    "task_type": "daily",
+    "priority": 3,
+    "status": "pending",
+    "created_at": "2025-07-04T08:30:00",
+    "due_date": null,
+    "completed_at": null,
+    "triggers": [
+      "time:08:30"
+    ],
+    "actions": [
+      "send_morning_greeting",
+      "ask_sleep_quality",
+      "ask_daily_mood"
+    ],
+    "recurring_pattern": "daily",
+    "context": {
+      "greeting_sent_today": false,
+      "last_greeting_date": null
+    }
+  },
+  {
+    "id": "breakfast_reminder",
+    "title": "早餐关爱提醒",
+    "description": "早上9点提醒用户吃早餐，询问早餐内容，给出健康建议",
+    "task_type": "daily",
+    "priority": 2,
+    "status": "pending",
+    "created_at": "2025-07-04T09:00:00",
+    "due_date": null,
+    "completed_at": null,
+    "triggers": [
+      "time:09:00"
+    ],
+    "actions": [
+      "remind_breakfast",
+      "ask_breakfast_content",
+      "provide_nutrition_tips"
+    ],
+    "recurring_pattern": "daily",
+    "context": {
+      "reminder_sent_today": false
+    }
+  },
+  {
+    "id": "evening_chat",
+    "title": "晚间聊天",
+    "description": "晚上8点主动聊天，了解用户一天的感受",
+    "task_type": "daily",
+    "priority": 2,
+    "status": "pending",
+    "created_at": "2025-07-04T20:00:00",
+    "due_date": null,
+    "completed_at": null,
+    "triggers": [
+      "time:20:00"
+    ],
+    "actions": [
+      "evening_chat",
+      "daily_summary"
+    ],
+    "recurring_pattern": "daily",
+    "context": {
+      "chat_initiated_today": false
+    }
+  },
+  {
+    "id": "weekly_review",
+    "title": "周末总结",
+    "description": "每周日晚上提醒用户进行一周总结和下周计划",
+    "task_type": "short_term",
+    "priority": 3,
+    "status": "pending",
+    "created_at": "2025-07-04T19:00:00",
+    "due_date": "2025-07-06T19:00:00",
+    "completed_at": null,
+    "triggers": [
+      "time:19:00"
+    ],
+    "actions": [
+      "weekly_summary",
+      "next_week_planning"
+    ],
+    "recurring_pattern": "weekly",
+    "context": {
+      "last_summary_date": null
+    }
+  },
+  {
+    "id": "relationship_building",
+    "title": "感情维护",
+    "description": "定期主动关心用户，建立更深的情感联系",
+    "task_type": "long_term",
+    "priority": 1,
+    "status": "active",
+    "created_at": "2025-07-04T10:00:00",
+    "due_date": null,
+    "completed_at": null,
+    "triggers": [
+      "idle_check"
+    ],
+    "actions": [
+      "send_care_message",
+      "build_relationship"
+    ],
+    "recurring_pattern": null,
+    "context": {
+      "last_care_time": null,
+      "relationship_level": 1,
+      "interaction_count": 0
+    }
+  },
+  {
+    "id": "study_reminder",
+    "title": "学习提醒",
+    "description": "下午3点提醒用户学习或工作休息，保持效率",
+    "task_type": "daily",
+    "priority": 2,
+    "status": "pending",
+    "created_at": "2025-07-04T15:00:00",
+    "due_date": null,
+    "completed_at": null,
+    "triggers": [
+      "time:15:00"
+    ],
+    "actions": [
+      "study_reminder",
+      "break_suggestion"
+    ],
+    "recurring_pattern": "daily",
+    "context": {
+      "reminder_count": 0
+    }
+  },
+  {
+    "id": "weather_care",
+    "title": "天气关怀",
+    "description": "每天早上关心天气变化，提醒添衣保暖",
+    "task_type": "daily",
+    "priority": 1,
+    "status": "pending",
+    "created_at": "2025-07-04T08:30:00",
+    "due_date": null,
+    "completed_at": null,
+    "triggers": [
+      "time:08:30"
+    ],
+    "actions": [
+      "weather_care",
+      "clothing_reminder"
+    ],
+    "recurring_pattern": "daily",
+    "context": {
+      "last_weather_check": null
+    }
+  },
+  {
+    "id": "motivation_boost",
+    "title": "动力鼓励",
+    "description": "不定期发送鼓励和正能量消息，提升用户心情",
+    "task_type": "short_term",
+    "priority": 2,
+    "status": "pending",
+    "created_at": "2025-07-04T14:00:00",
+    "due_date": "2025-07-11T14:00:00",
+    "completed_at": null,
+    "triggers": [
+      "random_check"
+    ],
+    "actions": [
+      "send_motivation",
+      "positive_energy"
+    ],
+    "recurring_pattern": null,
+    "context": {
+      "last_motivation_time": null,
+      "user_mood_level": 5
+    }
+  },
+  {
+    "id": "health_management",
+    "title": "身体健康全面管理",
+    "description": "长期关注用户身体健康，收集健康数据，制定个性化运动饮食计划，并持续跟踪执行情况",
+    "task_type": "long_term",
+    "priority": 3,
+    "status": "pending",
+    "created_at": "2025-07-04T10:00:00",
+    "due_date": null,
+    "completed_at": null,
+    "triggers": [
+      "time:08:00",
+      "time:12:00",
+      "time:18:00",
+      "time:21:00",
+      "health_check"
+    ],
+    "actions": [
+      "collect_health_info",
+      "create_health_plan",
+      "track_health_progress",
+      "provide_health_encouragement",
+      "adjust_health_plan"
+    ],
+    "recurring_pattern": "continuous",
+    "context": {
+      "user_profile": {
+        "basic_info_collected": false,
+        "age": null,
+        "height": null,
+        "weight": null,
+        "gender": null,
+        "activity_level": null,
+        "health_goals": []
+      },
+      "diet_info": {
+        "dietary_preferences": [],
+        "food_allergies": [],
+        "meal_times": {
+          "breakfast": null,
+          "lunch": null,
+          "dinner": null
+        },
+        "daily_water_goal": 8,
+        "current_diet_habits": []
+      },
+      "exercise_info": {
+        "current_activity_level": null,
+        "preferred_exercises": [],
+        "exercise_schedule": {},
+        "fitness_goals": [],
+        "daily_step_goal": 8000,
+        "weekly_exercise_target": 150
+      },
+      "health_plan": {
+        "plan_created": false,
+        "diet_plan": {},
+        "exercise_plan": {},
+        "plan_start_date": null,
+        "last_updated": null
+      },
+      "tracking": {
+        "daily_logs": {},
+        "weekly_progress": {},
+        "last_check_date": null,
+        "consecutive_days": 0,
+        "achievements": []
+      },
+      "next_action": "collect_basic_info",
+      "info_collection_stage": "start"
+    }
+  }
+]
