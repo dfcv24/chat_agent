@@ -1,95 +1,26 @@
 import json
 import os
 from datetime import datetime
-from typing import List, Dict, Optional
-from abc import ABC, abstractmethod
-import requests
-
-class AIProvider(ABC):
-    """AI服务提供商抽象基类"""
-    
-    @abstractmethod
-    def get_response(self, messages: List[Dict], **kwargs) -> str:
-        pass
-
-class OpenAIProvider(AIProvider):
-    """OpenAI API提供商"""
-    
-    def __init__(self, api_key: str, base_url: str = "https://api.openai.com/v1", model: str = "gpt-3.5-turbo"):
-        self.api_key = api_key
-        self.base_url = base_url
-        self.model = model
-    
-    def get_response(self, messages: List[Dict], max_tokens: int = 2000, temperature: float = 0.7) -> str:
-        headers = {
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json"
-        }
-        
-        data = {
-            "model": self.model,
-            "messages": messages,
-            "max_tokens": max_tokens,
-            "temperature": temperature
-        }
-        
-        try:
-            response = requests.post(
-                f"{self.base_url}/chat/completions",
-                headers=headers,
-                json=data,
-                timeout=30
-            )
-            response.raise_for_status()
-            result = response.json()
-            return result["choices"][0]["message"]["content"].strip()
-        except Exception as e:
-            return f"❌ 请求失败: {str(e)}"
-
-class MockProvider(AIProvider):
-    """模拟AI提供商（用于测试）"""
-    
-    def get_response(self, messages: List[Dict], **kwargs) -> str:
-        user_message = messages[-1]["content"] if messages else ""
-        
-        # 简单的回复逻辑
-        if "你好" in user_message or "hello" in user_message.lower():
-            return "你好！很高兴见到你！有什么可以帮助你的吗？😊"
-        elif "再见" in user_message or "bye" in user_message.lower():
-            return "再见！希望我们的对话对你有帮助！👋"
-        elif "谢谢" in user_message or "thank" in user_message.lower():
-            return "不客气！我很乐意帮助你！如果还有其他问题，请随时告诉我。😄"
-        elif "?" in user_message or "？" in user_message:
-            return "这是个很好的问题！虽然我是模拟AI，但我会尽力提供有用的信息。你可以尝试配置真实的AI服务来获得更好的回复。🤔"
-        else:
-            return f"我听到你说：'{user_message}'。由于我是模拟AI，我的回复可能比较简单。请配置真实的AI服务以获得更智能的对话体验！💡"
+from typing import List, Dict
+from openai import OpenAI
+from config import ChatConfig
+from prompt_toolkit import prompt
 
 class ChatBot:
     def __init__(self):
-        from config import ChatConfig
         self.config = ChatConfig()
         self.chat_history = []
         self.system_prompt = self.load_system_prompt()
-        self.ai_provider = self.setup_ai_provider()
+        self.setup_api()
         self.load_chat_history()
+        self.client = OpenAI()
         
-    def setup_ai_provider(self) -> AIProvider:
-        """设置AI提供商"""
-        # 尝试使用OpenAI
-        if self.config.API_KEY:
-            print("🔗 使用OpenAI API服务")
-            return OpenAIProvider(
-                api_key=self.config.API_KEY,
-                base_url=self.config.API_BASE_URL,
-                model=self.config.MODEL_NAME
-            )
-        else:
-            print("⚠️  未配置API密钥，使用模拟AI服务")
-            print("💡 要使用真实AI服务，请：")
-            print("   1. 复制 .env.example 为 .env")
-            print("   2. 在 .env 文件中填入你的API密钥")
-            print("   3. 重新启动程序")
-            return MockProvider()
+    def setup_api(self):
+        """设置API客户端"""
+        if not self.config.API_KEY:
+            print("⚠️  警告: 未找到API密钥，请设置环境变量 OPENAI_API_KEY")
+            print("或者使用其他AI服务，请修改此方法中的API设置")
+            return
     
     def load_system_prompt(self) -> str:
         """加载系统提示词"""
@@ -101,6 +32,8 @@ class ChatBot:
             return "你是一个有用的AI助手。"
     
     def load_chat_history(self):
+        self.chat_history = []
+        return 
         """加载聊天历史"""
         try:
             if os.path.exists(self.config.CHAT_HISTORY_FILE):
@@ -132,7 +65,7 @@ class ChatBot:
             self.chat_history = self.chat_history[-self.config.MAX_HISTORY_LENGTH:]
     
     def get_chat_messages(self, user_input: str) -> List[Dict]:
-        """构建发送给AI的消息列表"""
+        """构建发送给API的消息列表"""
         messages = [{"role": "system", "content": self.system_prompt}]
         
         # 添加历史对话（最近几轮）
@@ -149,12 +82,21 @@ class ChatBot:
     def get_response(self, user_input: str) -> str:
         """获取机器人回复"""
         try:
+            if not self.config.API_KEY:
+                return "❌ 抱歉，API密钥未配置，无法获取回复。请检查配置。"
+            
             messages = self.get_chat_messages(user_input)
-            return self.ai_provider.get_response(
+            
+            response = self.client.chat.completions.create(
+                model=self.config.MODEL_NAME,
                 messages=messages,
                 max_tokens=self.config.MAX_TOKENS,
-                temperature=self.config.TEMPERATURE
+                temperature=self.config.TEMPERATURE,
+                top_p=self.config.TOP_P
             )
+            
+            return response.choices[0].message.content.strip()
+            
         except Exception as e:
             return f"❌ 抱歉，我遇到了一些问题: {str(e)}"
     
@@ -190,18 +132,17 @@ class ChatBot:
     def chat_loop(self):
         """主聊天循环"""
         print(f"\n{self.config.WELCOME_MESSAGE}")
-        print("💡 输入 '帮助' 查看可用命令\n")
         
         try:
             while True:
-                user_input = input(f"\n😊 你: ").strip()
+                user_input = prompt(f"\n😊 你: ").strip()
                 
                 if not user_input:
                     continue
                 
                 # 检查特殊命令
                 if user_input.lower() in self.config.EXIT_COMMANDS:
-                    print(f"\n👋 {self.config.BOT_NAME}: 再见！很高兴与你聊天！")
+                    print(f"\n嘿嘿～那我就不打扰你啦，记得想我哦～👋 {self.config.BOT_NAME}先走啦～")
                     break
                 
                 if user_input.lower() in self.config.CLEAR_COMMANDS:
@@ -222,7 +163,7 @@ class ChatBot:
                 self.save_chat_history()
                 
         except KeyboardInterrupt:
-            print(f"\n\n👋 {self.config.BOT_NAME}: 再见！很高兴与你聊天！")
+            print(f"\n\n嘿嘿～那我就不打扰你啦，记得想我哦～👋 {self.config.BOT_NAME}先走啦～")
         except Exception as e:
             print(f"\n❌ 程序发生错误: {e}")
 
