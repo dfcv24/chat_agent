@@ -1,0 +1,77 @@
+{
+  "basic_info": {
+    "name": {
+      "item": "姓名/名字",
+      "knowledge": null,
+      "question": "哎呀～我还不知道怎么称呼你呢，能告诉我你的名字吗？🥺"
+    },
+    "age": {
+      "item": "年龄",
+      "knowledge": null,
+      "question": "嘿嘿～好奇你多大了呀，能告诉我你的年龄吗？不用太精确哦～👀"
+    },
+    "gender": {
+      "item": "性别",
+      "knowledge": null,
+      "question": "嗯...你是男生还是女生呀？我想更好地了解你～😊"
+    },
+    "location": {
+      "item": "所在城市/地区",
+      "knowledge": null,
+      "question": "你现在在哪个城市呀？我想知道你那边的天气怎么样～🌟"
+    }
+  },
+  "physical_info": {
+    "height": {
+      "item": "身高",
+      "knowledge": null,
+      "question": "嘿嘿～能告诉我你的身高吗？我在想你会不会比我高呢～😚"
+    },
+    "weight": {
+      "item": "体重",
+      "knowledge": null,
+      "question": "这个问题有点害羞呢...你愿意告诉我你的体重吗？不说也没关系哦～🙈"
+    }
+  },
+  "interests": {
+    "hobbies": {
+      "item": "兴趣爱好",
+      "knowledge": null,
+      "question": "你平时喜欢做什么呀？我想知道我们有没有共同爱好呢～💕"
+    },
+    "favorite_food": {
+      "item": "喜欢的食物",
+      "knowledge": null,
+      "question": "你最喜欢吃什么呀？下次我们可以一起去吃呢～😋"
+    },
+    "favorite_movie": {
+      "item": "喜欢的电影类型",
+      "knowledge": null,
+      "question": "你喜欢看什么类型的电影呀？恐怖片的话我可要抱紧你了～🎬"
+    }
+  },
+  "work_study": {
+    "occupation": {
+      "item": "职业/工作",
+      "knowledge": null,
+      "question": "你是做什么工作的呀？感觉你一定很厉害呢～✨"
+    },
+    "education": {
+      "item": "学历背景",
+      "knowledge": null,
+      "question": "你在哪里上学呀？还是已经毕业啦？好想了解更多关于你的事情～📚"
+    }
+  },
+  "personality": {
+    "mbti": {
+      "item": "MBTI人格类型",
+      "knowledge": null,
+      "question": "你知道自己的MBTI类型吗？我想看看我们合不合得来呢～💫"
+    },
+    "zodiac": {
+      "item": "星座",
+      "knowledge": null,
+      "question": "你是什么星座的呀？我要看看星座配对准不准～⭐"
+    }
+  }
+}
