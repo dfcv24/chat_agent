@@ -346,11 +346,11 @@ class ChatBot:
         self.question_timer.start()
         
         # 启动思考定时器
-        self.think_timer = threading.Timer(
-            self.think_interval,
-            self.schedule_thinking
-        )
-        self.think_timer.start()
+        # self.think_timer = threading.Timer(
+        #     self.think_interval,
+        #     self.schedule_thinking
+        # )
+        # self.think_timer.start()
         
         try:
             while self.running:
