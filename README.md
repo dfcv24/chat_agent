@@ -25,11 +25,6 @@ cp .env.example .env
 # 例如：OPENAI_API_KEY=your_api_key_here
 ```
 
-3. **运行程序**
-```bash
-python main.py
-```
-
 ## ⚙️ 配置说明
 
 ### 自定义性格和行为
@@ -109,8 +104,47 @@ A: 可以！查看 `.env.example` 文件中的示例，或修改代码添加新�
 **Q: 聊天记录保存在哪里？**  
 A: 聊天记录自动保存在 `data/chat_history.json` 文件中。
 
+**Q: 语音功能如何工作？**  
+A: 需要启动TTS服务在 http://localhost:8000，然后使用 `start_web_with_tts.py` 启动支持语音的版本。
+
+## 🎤 语音功能详解
+
+### TTS API 集成
+本项目集成了语音合成功能，支持将AI回复自动转换为语音：
+
+```python
+# TTS API 调用示例
+def synthesize_speech(text, language="zh"):
+    url = "http://localhost:8000/tts"
+    payload = {
+        "text": text,
+        "text_language": language,
+        "temperature": 0.6,
+        "speed": 1.0,
+        "top_k": 20,
+        "top_p": 0.6
+    }
+    # 返回音频文件
+```
+
+### 语音功能特性
+- ✅ 自动语音生成：每条AI回复都会自动生成对应语音
+- ✅ 智能缓存：相同文本不会重复生成，提高效率
+- ✅ 播放控制：支持播放、暂停、重播功能
+- ✅ 多音频管理：自动停止其他正在播放的音频
+- ✅ 错误处理：TTS服务不可用时优雅降级
+
+### 启动语音版本
+```bash
+# 1. 启动TTS服务 (端口8000)
+# 2. 启动Web应用
+python start_web_with_tts.py
+# 3. 访问 http://localhost:8001
+```
+
 ## 🔄 更新日志
 
+- v1.1.0: 新增语音合成功能，支持TTS API集成
 - v1.0.0: 初始版本，支持基本聊天功能和prompt配置
 
 ## 📄 许可证
@@ -119,4 +153,4 @@ A: 聊天记录自动保存在 `data/chat_history.json` 文件中。
 
 ---
 
-🎉 享受与你的AI助手的对话吧！如有问题请查看文档或提issue。
+🎉 享受与你的AI助手的对话吧！现在还支持语音互动哦！如有问题请查看文档或提issue。

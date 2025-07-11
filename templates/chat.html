@@ -129,6 +129,49 @@
             text-align: left;
         }
 
+        .audio-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .play-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 28px;
+            height: 28px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .play-button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+        }
+
+        .play-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .play-button.playing {
+            background: linear-gradient(135deg, #ff6b6b 0%, #feca57 100%);
+        }
+
+        .audio-status {
+            font-size: 11px;
+            color: #666;
+            opacity: 0.8;
+        }
+
         .chat-input-container {
             padding: 20px;
             background: white;
@@ -393,7 +436,7 @@
                 hideTypingIndicator();
                 
                 // 显示机器人回复
-                addMessage(data.response, 'bot');
+                addMessage(data.response, 'bot', data.audio_url);
                 
             } catch (error) {
                 hideTypingIndicator();
@@ -406,7 +449,7 @@
         }
 
         // 添加消息到聊天界面
-        function addMessage(content, type) {
+        function addMessage(content, type, audioUrl = null) {
             const messageDiv = document.createElement('div');
             messageDiv.className = `message ${type}`;
             
@@ -416,9 +459,27 @@
                 minute: '2-digit' 
             });
             
+            let audioControls = '';
+            if (type === 'bot' && audioUrl) {
+                const audioId = `audio_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                audioControls = `
+                    <div class="audio-controls">
+                        <button class="play-button" onclick="toggleAudio('${audioId}', this)">
+                            <i class="fas fa-play"></i>
+                        </button>
+                        <span class="audio-status">点击播放语音</span>
+                        <audio id="${audioId}" preload="metadata">
+                            <source src="${audioUrl}" type="audio/wav">
+                            您的浏览器不支持音频播放。
+                        </audio>
+                    </div>
+                `;
+            }
+            
             messageDiv.innerHTML = `
                 <div class="message-content">
                     ${content.replace(/\n/g, '<br>')}
+                    ${audioControls}
                     <div class="message-time">${timeString}</div>
                 </div>
             `;
@@ -448,6 +509,55 @@
         // 隐藏输入指示器
         function hideTypingIndicator() {
             typingIndicator.classList.remove('show');
+        }
+
+        // 切换音频播放
+        function toggleAudio(audioId, button) {
+            const audio = document.getElementById(audioId);
+            const icon = button.querySelector('i');
+            const status = button.nextElementSibling;
+            
+            if (audio.paused) {
+                // 暂停其他正在播放的音频
+                document.querySelectorAll('audio').forEach(a => {
+                    if (a !== audio && !a.paused) {
+                        a.pause();
+                        a.currentTime = 0;
+                        // 重置其他播放按钮状态
+                        const otherButton = a.parentElement.querySelector('.play-button');
+                        const otherIcon = otherButton.querySelector('i');
+                        const otherStatus = otherButton.nextElementSibling;
+                        otherButton.classList.remove('playing');
+                        otherIcon.className = 'fas fa-play';
+                        otherStatus.textContent = '点击播放语音';
+                    }
+                });
+                
+                // 播放当前音频
+                audio.play().then(() => {
+                    button.classList.add('playing');
+                    icon.className = 'fas fa-pause';
+                    status.textContent = '正在播放...';
+                }).catch(error => {
+                    console.error('音频播放失败:', error);
+                    status.textContent = '播放失败';
+                });
+                
+                // 播放结束事件
+                audio.onended = () => {
+                    button.classList.remove('playing');
+                    icon.className = 'fas fa-play';
+                    status.textContent = '点击播放语音';
+                };
+                
+            } else {
+                // 暂停音频
+                audio.pause();
+                audio.currentTime = 0;
+                button.classList.remove('playing');
+                icon.className = 'fas fa-play';
+                status.textContent = '点击播放语音';
+            }
         }
 
         // 清除历史记录
