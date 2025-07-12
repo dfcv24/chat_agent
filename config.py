@@ -48,3 +48,17 @@ class ChatConfig:
     PROACTIVE_QUESTION_DELAY = 5  # 用户空闲多少秒后开始主动提问
     MAX_IDLE_TIME = 60  # 用户最大空闲时间（秒），超过后不再主动提问
     QUESTION_CHECK_INTERVAL = 10  # 检查是否需要主动提问的间隔（秒）
+    
+    # 向量数据库设置
+    MILVUS_HOST = os.getenv("MILVUS_HOST", "localhost")
+    MILVUS_PORT = os.getenv("MILVUS_PORT", "19530")
+    MILVUS_COLLECTION_NAME = os.getenv("MILVUS_COLLECTION_NAME", "chat_agent_test")
+    
+    # Embedding设置 - 使用硅基流动的embedding API
+    EMBEDDING_MODEL_NAME = os.getenv("EMBEDDING_MODEL", "BAAI/bge-m3")  # 硅基流动支持的embedding模型
+    EMBEDDING_DIM = int(os.getenv("EMBEDDING_DIM", "1024"))  # bge-m3的嵌入维度是1024
+    # 或者qwen-embedding-8b，先用bge-m3，后续可以切换到qwen-embedding-8b
+    
+    # 向量搜索设置
+    VECTOR_SEARCH_LIMIT = int(os.getenv("VECTOR_SEARCH_LIMIT", "5"))
+    SIMILARITY_THRESHOLD = float(os.getenv("SIMILARITY_THRESHOLD", "0.7"))
