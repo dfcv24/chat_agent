@@ -1,10 +1,13 @@
 import json
 import os
-from datetime import datetime
+import threading
+import time
+from datetime import datetime, timedelta
 from typing import List, Dict
 from config import ChatConfig
 from llm_client import get_llm_client
 from prompts.system_prompt import CHAT_PROMPT
+from vector_db_manager import get_vector_db_manager
 
 class ChatBot:
     def __init__(self):
@@ -16,8 +19,19 @@ class ChatBot:
         # 初始化LLM客户端
         self.llm_client = get_llm_client(self.config)
         
+        # 初始化向量数据库管理器
+        self.vector_db = get_vector_db_manager(self.config)
+        
         # 聊天运行状态
         self.running = False
+        
+        # 归档相关
+        self.archive_thread = None
+        self.archive_running = False
+        
+        # 启动自动归档任务
+        if getattr(self.config, 'AUTO_ARCHIVE_ENABLED', True):
+            self.start_archive_task()
     
     def load_chat_history(self):
         """加载聊天历史"""
@@ -83,8 +97,14 @@ class ChatBot:
         except Exception as e:
             return f"❌ 抱歉，我遇到了一些问题: {str(e)}"
     
-    def clear_history(self):
+    def clear_history(self, archive_first: bool = False):
         """清除聊天历史"""
+        if archive_first and self.chat_history:
+            print("🗂️  正在归档现有聊天历史...")
+            if self.archive_chat_history():
+                print("✅ 聊天历史已归档并清除")
+                return
+        
         self.chat_history = []
         if os.path.exists(self.config.CHAT_HISTORY_FILE):
             os.remove(self.config.CHAT_HISTORY_FILE)
@@ -101,6 +121,7 @@ class ChatBot:
 🔧 特殊命令:
    退出/再见/bye/exit/quit - 退出程序
    清除历史/清空/clear - 清除聊天历史
+   归档/archive - 手动归档聊天历史到向量数据库
    帮助/help/命令 - 显示此帮助信息
 
 💡 提示:
@@ -141,6 +162,7 @@ class ChatBot:
             print(f"\n❌ 程序发生错误: {e}")
         finally:
             self.running = False
+            self.stop_archive_task()  # 停止归档任务
             print("\n👋 聊天结束")
     
     def process_message(self, user_input: str):
@@ -153,6 +175,13 @@ class ChatBot:
         
         if user_input.lower() in self.config.CLEAR_COMMANDS:
             self.clear_history()
+            return
+        
+        if user_input.lower() in getattr(self.config, 'ARCHIVE_COMMANDS', []):
+            if self.chat_history:
+                self.archive_chat_history()
+            else:
+                print("📝 当前没有聊天历史需要归档")
             return
         
         if user_input.lower() in self.config.HELP_COMMANDS:
@@ -168,13 +197,138 @@ class ChatBot:
         self.add_to_history(user_input, response)
         self.save_chat_history()
     
+    def get_last_chat_time(self) -> datetime:
+        """获取最后一次聊天的时间"""
+        if not self.chat_history:
+            return datetime.min
+        
+        try:
+            last_item = self.chat_history[-1]
+            timestamp_str = last_item.get("timestamp", "")
+            if timestamp_str:
+                return datetime.fromisoformat(timestamp_str)
+        except Exception as e:
+            print(f"⚠️  解析时间戳失败: {e}")
+        
+        return datetime.min
+    
+    def should_archive_history(self) -> bool:
+        """检查是否应该归档聊天历史"""
+        if not self.chat_history:
+            return False
+        
+        last_chat_time = self.get_last_chat_time()
+        if last_chat_time == datetime.min:
+            return False
+        
+        # 检查是否超过归档间隔
+        archive_interval = getattr(self.config, 'ARCHIVE_INTERVAL_HOURS', 6)
+        time_diff = datetime.now() - last_chat_time
+        
+        return time_diff.total_seconds() >= archive_interval * 3600
+    
+    def backup_chat_history_to_file(self) -> str:
+        """将聊天历史备份到文件"""
+        try:
+            backup_dir = getattr(self.config, 'ARCHIVE_BACKUP_DIR', 'data/archive')
+            os.makedirs(backup_dir, exist_ok=True)
+            
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            backup_file = os.path.join(backup_dir, f"chat_history_{timestamp}.json")
+            
+            with open(backup_file, 'w', encoding='utf-8') as f:
+                json.dump(self.chat_history, f, ensure_ascii=False, indent=2)
+            
+            print(f"✅ 聊天历史已备份到: {backup_file}")
+            return backup_file
+            
+        except Exception as e:
+            print(f"⚠️  备份聊天历史失败: {e}")
+            return ""
+    
+    def archive_chat_history(self) -> bool:
+        """归档聊天历史到向量数据库并清理"""
+        if not self.chat_history:
+            return True
+        
+        try:
+            print("🗂️  开始归档聊天历史...")
+            
+            # 1. 备份到文件
+            backup_file = self.backup_chat_history_to_file()
+            
+            # 2. 保存到向量数据库
+            archive_timestamp = datetime.now().isoformat()
+            success = self.vector_db.save_chat_history_archive(
+                self.chat_history, 
+                archive_timestamp
+            )
+            
+            if success:
+                # 3. 清理聊天历史
+                history_count = len(self.chat_history)
+                self.chat_history = []
+                self.save_chat_history()
+                
+                print(f"✅ 成功归档并清理了 {history_count} 条聊天记录")
+                if backup_file:
+                    print(f"📁 备份文件: {backup_file}")
+                
+                return True
+            else:
+                print("❌ 向量数据库归档失败，保留聊天历史")
+                return False
+                
+        except Exception as e:
+            print(f"❌ 归档聊天历史失败: {e}")
+            return False
+    
+    def start_archive_task(self):
+        """启动后台归档任务"""
+        if self.archive_thread and self.archive_thread.is_alive():
+            return
+        
+        self.archive_running = True
+        self.archive_thread = threading.Thread(target=self._archive_worker, daemon=True)
+        self.archive_thread.start()
+        print("🗂️  自动归档任务已启动")
+    
+    def stop_archive_task(self):
+        """停止后台归档任务"""
+        self.archive_running = False
+        if self.archive_thread and self.archive_thread.is_alive():
+            self.archive_thread.join(timeout=1)
+        print("🗂️  自动归档任务已停止")
+    
+    def _archive_worker(self):
+        """后台归档工作线程"""
+        check_interval = 3600  # 每小时检查一次
+        
+        while self.archive_running:
+            try:
+                if self.should_archive_history():
+                    print("⏰ 检测到聊天历史需要归档...")
+                    self.archive_chat_history()
+                
+                # 等待下次检查
+                for _ in range(check_interval):
+                    if not self.archive_running:
+                        break
+                    time.sleep(1)
+                    
+            except Exception as e:
+                print(f"❌ 归档任务出错: {e}")
+                time.sleep(60)  # 出错后等待1分钟再继续
+    
     def start_chat(self):
         """启动聊天（提供一个更清晰的入口方法）"""
         try:
             self.simple_chat()
         except Exception as e:
             print(f"\n❌ 程序发生错误: {e}")
+        finally:
             self.running = False
+            self.stop_archive_task()  # 停止归档任务
 
 if __name__ == "__main__":
     bot = ChatBot()

@@ -152,20 +152,6 @@ async def chat(message: ChatMessage):
         bot.add_to_history(user_input, response)
         bot.save_chat_history()
         
-        # 处理知识提取（如果启用）
-        if bot.config.ENABLE_KNOWLEDGE_LEARNING and bot.last_question_context:
-            extracted_info = bot.knowledge_manager.extract_info_from_response(
-                user_input, bot.last_question_context
-            )
-            
-            if extracted_info:
-                updated = bot.knowledge_manager.update_knowledge(extracted_info)
-                if updated:
-                    response += "\n\n✨ 我记住了关于你的新信息～"
-        
-        # 重置问题上下文
-        bot.last_question_context = ""
-        
         # 生成语音
         audio_url = synthesize_speech(response)
         
@@ -233,7 +219,6 @@ async def get_status():
             "version": bot.config.VERSION,
             "llm_available": bot.llm_client.is_available if bot.llm_client else False,
             "tts_available": tts_available,
-            "knowledge_learning_enabled": bot.config.ENABLE_KNOWLEDGE_LEARNING,
             "chat_history_count": len(bot.chat_history)
         }
         

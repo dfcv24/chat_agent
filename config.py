@@ -37,12 +37,8 @@ class ChatConfig:
     # 特殊命令
     EXIT_COMMANDS = ["退出", "再见", "bye", "exit", "quit"]
     CLEAR_COMMANDS = ["清除历史", "清空", "clear"]
+    ARCHIVE_COMMANDS = ["归档", "archive", "归档历史"]
     HELP_COMMANDS = ["帮助", "help", "命令"]
-    
-    # 知识管理设置
-    ENABLE_KNOWLEDGE_LEARNING = True  # 是否启用知识学习
-    AUTO_ASK_QUESTIONS = True  # 是否自动询问用户信息
-    QUESTION_PROBABILITY = 0.3  # 主动询问问题的概率（0-1）
     
     # 异步交互设置
     PROACTIVE_QUESTION_DELAY = 5  # 用户空闲多少秒后开始主动提问
@@ -53,6 +49,11 @@ class ChatConfig:
     MILVUS_HOST = os.getenv("MILVUS_HOST", "localhost")
     MILVUS_PORT = os.getenv("MILVUS_PORT", "19530")
     MILVUS_COLLECTION_NAME = os.getenv("MILVUS_COLLECTION_NAME", "chat_agent_test")
+    
+    # 聊天历史归档设置
+    ARCHIVE_INTERVAL_HOURS = 6  # 6小时无新内容后归档
+    AUTO_ARCHIVE_ENABLED = True  # 是否启用自动归档
+    ARCHIVE_BACKUP_DIR = "data/archive"  # 归档备份目录
     
     # Embedding设置 - 使用硅基流动的embedding API
     EMBEDDING_MODEL_NAME = os.getenv("EMBEDDING_MODEL", "BAAI/bge-m3")  # 硅基流动支持的embedding模型

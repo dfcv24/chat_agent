@@ -1,4 +1,5 @@
 data/chat_history.json
 data/user_knowledge.json
+data/archive
 __pycache__
 static

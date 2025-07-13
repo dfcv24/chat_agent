@@ -435,6 +435,61 @@ class VectorDBManager:
                 print("✅ Milvus连接已关闭")
         except Exception as e:
             print(f"⚠️  关闭连接失败: {e}")
+    
+    def save_chat_history_archive(self, chat_history: List[Dict], archive_timestamp: str = None) -> bool:
+        """
+        将聊天历史保存到向量数据库作为归档
+        
+        Args:
+            chat_history: 聊天历史列表
+            archive_timestamp: 归档时间戳，为None时使用当前时间
+            
+        Returns:
+            保存是否成功
+        """
+        if not chat_history:
+            print("⚠️  聊天历史为空，跳过归档")
+            return True
+            
+        if archive_timestamp is None:
+            archive_timestamp = datetime.now().isoformat()
+        
+        try:
+            # 批量保存聊天记录
+            success_count = 0
+            
+            for i, chat_item in enumerate(chat_history):
+                # 构建对话内容
+                conversation_text = f"用户: {chat_item.get('user', '')}\n助手: {chat_item.get('bot', '')}"
+                
+                # 元数据
+                metadata = {
+                    "original_timestamp": chat_item.get("timestamp", ""),
+                    "archive_timestamp": archive_timestamp,
+                    "conversation_index": i,
+                    "total_conversations": len(chat_history),
+                    "user_message": chat_item.get('user', ''),
+                    "bot_response": chat_item.get('bot', '')
+                }
+                
+                # 保存到向量数据库
+                result = self.save_data(
+                    content=conversation_text,
+                    content_type="chat_archive",
+                    metadata=metadata
+                )
+                
+                if result:
+                    success_count += 1
+                else:
+                    print(f"⚠️  保存第{i+1}条对话失败")
+            
+            print(f"✅ 成功归档 {success_count}/{len(chat_history)} 条聊天记录到向量数据库")
+            return success_count == len(chat_history)
+            
+        except Exception as e:
+            print(f"❌ 归档聊天历史失败: {e}")
+            return False
 
 
 # 全局向量数据库管理器实例
