@@ -55,6 +55,11 @@ class ChatConfig:
     AUTO_ARCHIVE_ENABLED = True  # 是否启用自动归档
     ARCHIVE_BACKUP_DIR = "data/archive"  # 归档备份目录
     
+    # 历史搜索设置
+    ENABLE_HISTORY_SEARCH = True  # 是否启用历史搜索
+    HISTORY_SEARCH_LIMIT = 3  # 搜索历史记录的数量限制
+    HISTORY_SIMILARITY_THRESHOLD = 0.7  # 相似度阈值
+    
     # Embedding设置 - 使用硅基流动的embedding API
     EMBEDDING_MODEL_NAME = os.getenv("EMBEDDING_MODEL", "BAAI/bge-m3")  # 硅基流动支持的embedding模型
     EMBEDDING_DIM = int(os.getenv("EMBEDDING_DIM", "1024"))  # bge-m3的嵌入维度是1024

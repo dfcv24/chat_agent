@@ -100,57 +100,7 @@ async def chat(message: ChatMessage):
         
         # 检查特殊命令
         user_input = message.message.strip()
-        
-        if user_input.lower() in bot.config.EXIT_COMMANDS:
-            response_text = "再见！感谢使用聊天助手～👋"
-            audio_url = synthesize_speech(response_text)
-            return ChatResponse(
-                response=response_text,
-                timestamp=datetime.now().isoformat(),
-                audio_url=audio_url
-            )
-        
-        if user_input.lower() in bot.config.CLEAR_COMMANDS:
-            bot.clear_history()
-            response_text = "✅ 聊天历史已清除"
-            audio_url = synthesize_speech(response_text)
-            return ChatResponse(
-                response=response_text,
-                timestamp=datetime.now().isoformat(),
-                audio_url=audio_url
-            )
-        
-        if user_input.lower() in bot.config.HELP_COMMANDS:
-            help_text = f"""
-🤖 {bot.config.BOT_NAME} 帮助信息
-
-📝 基本使用:
-   直接输入你的问题或想说的话
-
-🔧 特殊命令:
-   清除历史/清空/clear - 清除聊天历史
-   帮助/help/命令 - 显示此帮助信息
-
-💡 提示:
-   - 我会记住最近的对话内容
-   - 你可以随时询问任何问题
-   - 输入要清楚明确，我会尽力帮助你
-
-版本: {bot.config.VERSION}
-            """
-            audio_url = synthesize_speech(help_text)
-            return ChatResponse(
-                response=help_text,
-                timestamp=datetime.now().isoformat(),
-                audio_url=audio_url
-            )
-        
-        # 获取AI回复
-        response = bot.get_response(user_input)
-        
-        # 保存到历史记录
-        bot.add_to_history(user_input, response)
-        bot.save_chat_history()
+        response = bot.process_message(user_input)
         
         # 生成语音
         audio_url = synthesize_speech(response)

@@ -68,7 +68,42 @@ class ChatBot:
         """构建发送给API的消息列表"""
         messages = [{"role": "system", "content": self.chat_prompt}]
         
-        # 添加历史对话（最近几轮）
+        # 搜索相关的历史聊天记录（如果启用）
+        related_history = []
+        if getattr(self.config, 'ENABLE_HISTORY_SEARCH', True):
+            try:
+                if self.vector_db and self.vector_db.is_available:
+                    search_limit = getattr(self.config, 'HISTORY_SEARCH_LIMIT', 3)
+                    related_history = self.vector_db.search_related_chat_history(user_input, limit=search_limit)
+            except Exception as e:
+                print(f"⚠️  搜索历史记录失败: {e}")
+        
+        # 如果找到相关的历史记录，添加到上下文中
+        if related_history:
+            context_content = "📚 参考相关的历史对话:\n"
+            for i, record in enumerate(related_history, 1):
+                # 格式化历史对话
+                user_msg = record.get('user_message', '')
+                bot_msg = record.get('bot_response', '')
+                original_time = record.get('original_timestamp', '')
+                similarity = record.get('score', 0)
+                
+                if user_msg and bot_msg:
+                    # 截断过长的消息
+                    user_msg_short = user_msg[:100] + "..." if len(user_msg) > 100 else user_msg
+                    bot_msg_short = bot_msg[:150] + "..." if len(bot_msg) > 150 else bot_msg
+                    
+                    context_content += f"\n{i}. 历史对话 ({original_time[:10] if original_time else '时间未知'}, 相似度: {similarity:.2f}):\n"
+                    context_content += f"   用户: {user_msg_short}\n"
+                    context_content += f"   助手: {bot_msg_short}\n"
+            
+            context_content += "\n💡 请结合这些历史对话的上下文来理解用户的意图，并提供更准确和连贯的回答。\n"
+            
+            # 添加历史上下文作为系统消息
+            print("搜索到的相关历史上下文", context_content)
+            messages.append({"role": "system", "content": context_content})
+        
+        # 添加当前会话的历史对话（最近几轮）
         recent_history = self.chat_history[-5:]  # 只取最近5轮对话
         for item in recent_history:
             messages.append({"role": "user", "content": item["user"]})
@@ -122,16 +157,19 @@ class ChatBot:
    退出/再见/bye/exit/quit - 退出程序
    清除历史/清空/clear - 清除聊天历史
    归档/archive - 手动归档聊天历史到向量数据库
+   调试/debug - 调试历史搜索功能
    帮助/help/命令 - 显示此帮助信息
 
 💡 提示:
    - 我会记住最近的对话内容
+   - 我还会搜索相关的历史记录来提供更准确的回答
    - 你可以随时询问任何问题
    - 输入要清楚明确，我会尽力帮助你
 
 版本: {self.config.VERSION}
         """
         print(help_text)
+        return help_text
     
     def simple_chat(self):
         """简单的同步聊天模式"""
@@ -171,22 +209,22 @@ class ChatBot:
         if user_input.lower() in self.config.EXIT_COMMANDS:
             print(f"\n嘿嘿～那我就不打扰你啦，记得想我哦～👋 {self.config.BOT_NAME}先走啦～")
             self.running = False
-            return
+            return "再见！感谢使用聊天助手～👋"
         
         if user_input.lower() in self.config.CLEAR_COMMANDS:
             self.clear_history()
-            return
+            return "✅ 聊天历史已清除"
         
         if user_input.lower() in getattr(self.config, 'ARCHIVE_COMMANDS', []):
             if self.chat_history:
                 self.archive_chat_history()
             else:
                 print("📝 当前没有聊天历史需要归档")
-            return
+            return "✅ 聊天历史已归档到向量数据库"
         
         if user_input.lower() in self.config.HELP_COMMANDS:
-            self.show_help()
-            return
+            help_text = self.show_help()
+            return help_text
         
         # 获取AI回复
         print(f"\n🤖 {self.config.BOT_NAME}: ", end="", flush=True)
@@ -196,6 +234,7 @@ class ChatBot:
         # 保存到历史记录
         self.add_to_history(user_input, response)
         self.save_chat_history()
+        return response
     
     def get_last_chat_time(self) -> datetime:
         """获取最后一次聊天的时间"""

@@ -491,6 +491,82 @@ class VectorDBManager:
             print(f"❌ 归档聊天历史失败: {e}")
             return False
 
+    def search_related_chat_history(self, query: str, limit: int = 5) -> List[Dict]:
+        """
+        搜索与查询相关的历史聊天记录
+        
+        Args:
+            query: 查询文本
+            limit: 返回结果数量限制
+            
+        Returns:
+            相关的聊天历史记录列表
+        """
+        if not self.is_available or not query.strip():
+            return []
+        
+        try:
+            # 获取查询的向量嵌入
+            query_embedding = self.get_embedding(query)
+            if query_embedding is None:
+                return []
+            
+            # 搜索相关的聊天归档记录
+            search_params = {
+                "metric_type": "COSINE",  # 内积相似度
+                "params": {"nprobe": 10}
+            }
+            
+            # 只搜索聊天归档类型的记录
+            expr = 'content_type == "chat_archive"'
+            
+            results = self.collection.search(
+                data=[query_embedding],
+                anns_field="embedding",
+                param=search_params,
+                limit=limit * 2,  # 搜索更多结果以便过滤
+                expr=expr,
+                output_fields=["content", "metadata", "timestamp"]
+            )
+            
+            # 格式化搜索结果
+            chat_records = []
+            similarity_threshold = getattr(self.config, 'HISTORY_SIMILARITY_THRESHOLD', 0.7)
+            
+            if results and len(results) > 0:
+                for hit in results[0]:
+                    try:
+                        metadata = json.loads(hit.entity.get('metadata', '{}'))
+                        
+                        # 提取对话信息
+                        chat_record = {
+                            'content': hit.entity.get('content', ''),
+                            'score': hit.score,
+                            'timestamp': hit.entity.get('timestamp', ''),
+                            'original_timestamp': metadata.get('original_timestamp', ''),
+                            'user_message': metadata.get('user_message', ''),
+                            'bot_response': metadata.get('bot_response', ''),
+                            'archive_timestamp': metadata.get('archive_timestamp', '')
+                        }
+                        
+                        # 只返回相关度足够高的记录
+                        if hit.score > similarity_threshold:
+                            chat_records.append(chat_record)
+                            
+                        # 限制返回数量
+                        if len(chat_records) >= limit:
+                            break
+                            
+                    except Exception as e:
+                        print(f"⚠️  解析搜索结果失败: {e}")
+                        continue
+            
+            return chat_records
+            
+        except Exception as e:
+            print(f"⚠️  搜索相关聊天历史失败: {e}")
+            return []
+
 
 # 全局向量数据库管理器实例
 _global_vector_db = None
