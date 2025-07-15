@@ -80,20 +80,30 @@ class LLMClient:
             print(f"⚠️  LLM调用失败: {e}")
             return None
     
-    def simple_chat(self, 
+    def chat_functional(self, 
                    user_message: str, 
                    system_prompt: Optional[str] = None,
-                   temperature: Optional[float] = None) -> Optional[str]:
+                   temperature: Optional[float] = None,
+                   tools: Optional[List[Dict]] = None,
+                   tool_choice: Optional[str] = None) -> Optional[Dict[str, Any]]:
         """
-        简化的聊天接口
+        简化的聊天接口，支持function calling并自动执行函数
         
         Args:
             user_message: 用户消息
             system_prompt: 系统提示词
             temperature: 温度参数
+            tools: 工具定义列表，用于function calling
+            tool_choice: 工具选择策略 ("none", "auto", "required" 或具体工具名)
             
         Returns:
-            生成的回复
+            包含回复内容和函数执行结果的字典，格式：
+            {
+                "content": "回复内容",
+                "function_results": [函数执行结果列表] 或 None,
+                "finish_reason": "完成原因"
+            }
+            如果不使用tools，则直接返回字符串内容（保持向后兼容）
         """
         messages = []
         
@@ -101,8 +111,120 @@ class LLMClient:
             messages.append({"role": "system", "content": system_prompt})
         
         messages.append({"role": "user", "content": user_message})
+
+        tools = self.get_db_query_tools() if tools is None else tools
         
-        return self.chat_completion(messages, temperature=temperature)
+        # 如果没有使用tools，保持原有行为
+        if not tools:
+            response = self.chat_completion(messages, temperature=temperature)
+            return response
+        
+        # 使用function calling
+        if not self.is_available:
+            return None
+        
+        try:
+            completion_kwargs = {
+                "model": self.config.CHAT_MODEL_NAME,
+                "messages": messages,
+                "max_tokens": self.config.MAX_TOKENS,
+                "temperature": temperature if temperature is not None else self.config.TEMPERATURE,
+                "top_p": self.config.TOP_P,
+                "tools": tools
+            }
+            
+            if tool_choice:
+                completion_kwargs["tool_choice"] = tool_choice
+            
+            response = self._client.chat.completions.create(**completion_kwargs)
+            
+            choice = response.choices[0]
+            message = choice.message
+            
+            
+            # 处理工具调用并执行函数
+            if hasattr(message, 'tool_calls') and message.tool_calls:                
+                try:
+                    # 导入数据库查询管理器
+                    from db_query_manager import DatabaseQueryManager
+                    db_manager = DatabaseQueryManager()
+                    
+                    for tool_call in message.tool_calls:
+                        function_name = tool_call.function.name
+                        arguments = json.loads(tool_call.function.arguments)
+                        
+                        # 执行对应的函数
+                        function_result = self._execute_db_function(db_manager, function_name, arguments)
+                        
+                        result = function_result
+                        
+                except Exception as e:
+                    print(f"⚠️  函数执行失败: {e}")
+            
+            return result
+            
+        except Exception as e:
+            print(f"⚠️  LLM Function Calling调用失败: {e}")
+            return None
+    
+    def _execute_db_function(self, db_manager, function_name: str, arguments: Dict[str, Any]) -> Any:
+        """
+        执行数据库函数调用
+        
+        Args:
+            db_manager: 数据库管理器实例
+            function_name: 函数名
+            arguments: 函数参数
+            
+        Returns:
+            函数执行结果
+        """
+        print(f"🔍 执行函数: {function_name} with args: {arguments}")
+        try:
+            if function_name == "execute_query":
+                sql = arguments.get("sql")
+                params = arguments.get("params", [])
+                return db_manager.execute_query(sql, params)
+                
+            elif function_name == "get_table_schema":
+                table_name = arguments.get("table_name")
+                return db_manager.get_table_schema(table_name)
+                
+            elif function_name == "list_tables":
+                return db_manager.list_tables()
+                
+            elif function_name == "search_records":
+                table_name = arguments.get("table_name")
+                conditions = arguments.get("conditions", {})
+                limit = arguments.get("limit", 10)
+                return db_manager.search_records(table_name, conditions, limit)
+                
+            elif function_name == "insert_record":
+                table_name = arguments.get("table_name")
+                data = arguments.get("data")
+                return db_manager.insert_record(table_name, data)
+                
+            elif function_name == "update_record":
+                table_name = arguments.get("table_name")
+                data = arguments.get("data")
+                conditions = arguments.get("conditions")
+                return db_manager.update_record(table_name, data, conditions)
+                
+            elif function_name == "delete_record":
+                table_name = arguments.get("table_name")
+                conditions = arguments.get("conditions")
+                return db_manager.delete_record(table_name, conditions)
+                
+            elif function_name == "get_record_count":
+                table_name = arguments.get("table_name")
+                conditions = arguments.get("conditions", {})
+                return db_manager.get_record_count(table_name, conditions)
+                
+            else:
+                return {"error": f"未知函数: {function_name}"}
+                
+        except Exception as e:
+            return {"error": f"函数执行错误: {str(e)}"}
     
     def extract_json(self, 
                     user_input: str, 
@@ -225,7 +347,188 @@ class LLMClient:
         
         return self.simple_chat(prompt, temperature=0.3)
 
-
+    @staticmethod
+    def get_db_query_tools() -> List[Dict[str, Any]]:
+        """
+        获取数据库查询管理器的function calling工具定义
+        
+        Returns:
+            工具定义列表，用于function calling
+        """
+        return [
+            {
+                "type": "function",
+                "function": {
+                    "name": "execute_query",
+                    "description": "执行SQL查询语句，支持SELECT、INSERT、UPDATE、DELETE操作",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "sql": {
+                                "type": "string",
+                                "description": "要执行的SQL语句"
+                            },
+                            "params": {
+                                "type": "array",
+                                "items": {"type": "string"},
+                                "description": "SQL参数列表，用于参数化查询",
+                                "default": []
+                            }
+                        },
+                        "required": ["sql"]
+                    }
+                }
+            },
+            {
+                "type": "function", 
+                "function": {
+                    "name": "get_table_schema",
+                    "description": "获取数据库表的结构信息",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "table_name": {
+                                "type": "string",
+                                "description": "表名"
+                            }
+                        },
+                        "required": ["table_name"]
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "list_tables",
+                    "description": "列出数据库中所有的表名",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {}
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "search_records",
+                    "description": "根据条件搜索记录",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "table_name": {
+                                "type": "string",
+                                "description": "表名"
+                            },
+                            "conditions": {
+                                "type": "object",
+                                "description": "搜索条件，键值对格式",
+                                "additionalProperties": {"type": "string"}
+                            },
+                            "limit": {
+                                "type": "integer",
+                                "description": "返回结果的最大数量",
+                                "default": 10
+                            }
+                        },
+                        "required": ["table_name"]
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "insert_record",
+                    "description": "向表中插入新记录",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "table_name": {
+                                "type": "string",
+                                "description": "表名"
+                            },
+                            "data": {
+                                "type": "object",
+                                "description": "要插入的数据，键值对格式",
+                                "additionalProperties": {"type": "string"}
+                            }
+                        },
+                        "required": ["table_name", "data"]
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "update_record",
+                    "description": "更新表中的记录",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "table_name": {
+                                "type": "string",
+                                "description": "表名"
+                            },
+                            "data": {
+                                "type": "object",
+                                "description": "要更新的数据，键值对格式",
+                                "additionalProperties": {"type": "string"}
+                            },
+                            "conditions": {
+                                "type": "object",
+                                "description": "更新条件，键值对格式",
+                                "additionalProperties": {"type": "string"}
+                            }
+                        },
+                        "required": ["table_name", "data", "conditions"]
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "delete_record",
+                    "description": "删除表中的记录",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "table_name": {
+                                "type": "string",
+                                "description": "表名"
+                            },
+                            "conditions": {
+                                "type": "object",
+                                "description": "删除条件，键值对格式",
+                                "additionalProperties": {"type": "string"}
+                            }
+                        },
+                        "required": ["table_name", "conditions"]
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "get_record_count",
+                    "description": "获取表中记录的数量",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "table_name": {
+                                "type": "string",
+                                "description": "表名"
+                            },
+                            "conditions": {
+                                "type": "object",
+                                "description": "统计条件，键值对格式（可选）",
+                                "additionalProperties": {"type": "string"}
+                            }
+                        },
+                        "required": ["table_name"]
+                    }
+                }
+            }
+        ]
+    
 # 全局LLM客户端实例
 _global_llm_client = None
 
