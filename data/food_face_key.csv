@@ -1,0 +1,210 @@
+| 英文字段名                       | 中文翻译        |
+| --------------------------- | ----------- |
+| code                        | 编码          |
+| url                         | 页面链接        |
+| creator                     | 创建者         |
+| created\_t                  | 创建时间戳       |
+| created\_datetime           | 创建时间        |
+| last\_modified\_t           | 最后修改时间戳     |
+| last\_modified\_datetime    | 最后修改时间      |
+| last\_modified\_by          | 最后修改者       |
+| last\_updated\_t            | 最后更新时间戳     |
+| last\_updated\_datetime     | 最后更新时间      |
+| product\_name               | 产品名称        |
+| abbreviated\_product\_name  | 产品简称        |
+| generic\_name               | 通用名称        |
+| quantity                    | 净含量         |
+| packaging                   | 包装类型        |
+| packaging\_tags             | 包装标签        |
+| packaging\_en               | 包装（英文）      |
+| packaging\_text             | 包装文字描述      |
+| brands                      | 品牌          |
+| brands\_tags                | 品牌标签        |
+| brands\_en                  | 品牌（英文）      |
+| categories                  | 分类          |
+| categories\_tags            | 分类标签        |
+| categories\_enorigins       | 分类原产地（英文）   |
+| origins\_tags               | 原产地标签       |
+| origins\_en                 | 原产地（英文）     |
+| manufacturing\_places       | 生产地         |
+| manufacturing\_places\_tags | 生产地标签       |
+| labels                      | 标签          |
+| labels\_tags                | 标签标签（多标签字段） |
+| labels\_en                  | 标签（英文）      |
+| emb\_codes                  | 包装识别码       |
+| emb\_codes\_tags            | 包装码标签       |
+| first\_packaging\_code\_geo | 首次包装地（地理）   |
+| cities                      | 城市          |
+| cities\_tags                | 城市标签        |
+| purchase\_places            | 购买地         |
+| stores                      | 商店          |
+| countries                   | 国家          |
+| countries\_tags             | 国家标签        |
+| countries\_en               | 国家（英文）      |
+| ingredients\_text           | 配料文本        |
+| ingredients\_tags           | 配料标签        |
+| ingredients\_analysis\_tags | 配料成分分析标签    |
+| allergens                   | 过敏原         |
+| allergens\_entraces         | 过敏原（多语种）    |
+| traces\_tags                | 可能含有标签      |
+| traces\_en                  | 可能含有（英文）    |
+| serving\_size               | 单份量大小       |
+| serving\_quantity           | 单份量数量       |
+| no\_nutrition\_data               | 无营养数据              |
+| additives\_n                      | 添加剂数量              |
+| additives                         | 添加剂                |
+| additives\_tags                   | 添加剂标签              |
+| additives\_en                     | 添加剂（英文）            |
+| nutriscore\_score                 | 营养评分（NutriScore）分数 |
+| nutriscore\_grade                 | 营养评分等级（NutriScore） |
+| nova\_group                       | 加工等级（Nova 分组）      |
+| pnns\_groups\_1                   | PNNS 一级分类          |
+| pnns\_groups\_2                   | PNNS 二级分类          |
+| food\_groups                      | 食物类别               |
+| food\_groups\_tags                | 食物类别标签             |
+| food\_groups\_en                  | 食物类别（英文）           |
+| states                            | 状态                 |
+| states\_tags                      | 状态标签               |
+| states\_en                        | 状态（英文）             |
+| brand\_owner                      | 品牌所有者              |
+| environmental\_score\_score       | 环保评分（数值）           |
+| environmental\_score\_grade       | 环保评分等级             |
+| nutrient\_levels\_tags            | 营养水平标签             |
+| product\_quantity                 | 产品数量（单位：g/ml）      |
+| owner                             | 数据拥有者              |
+| data\_quality\_errors\_tags       | 数据质量错误标签           |
+| unique\_scans\_n                  | 唯一扫描次数             |
+| popularity\_tags                  | 流行度标签              |
+| completeness                      | 数据完整性评分            |
+| last\_image\_t                    | 最后图片时间戳            |
+| last\_image\_datetime             | 最后图片时间             |
+| main\_category                    | 主分类                |
+| main\_category\_en                | 主分类（英文）            |
+| image\_url                        | 图片链接               |
+| image\_small\_url                 | 小图链接               |
+| image\_ingredients\_url           | 配料图链接              |
+| image\_ingredients\_small\_url    | 配料图小图链接            |
+| image\_nutrition\_url             | 营养图链接              |
+| image\_nutrition\_small\_url      | 营养图小图链接            |
+| energy-kj\_100g                   | 能量（千焦 / 100g）      |
+| energy-kcal\_100g                 | 能量（千卡 / 100g）      |
+| energy\_100g                      | 能量总值（100g）         |
+| energy-from-fat\_100g             | 来自脂肪的能量（100g）      |
+| fat\_100g                         | 脂肪（100g）           |
+| saturated-fat\_100g               | 饱和脂肪（100g）         |
+| butyric-acid\_100g                | 丁酸（100g）           |
+| caproic-acid\_100g                | 己酸（100g）           |
+| caprylic-acid\_100g               | 辛酸（100g）           |
+| capric-acid\_100g                 | 癸酸（100g）           |
+| lauric-acid\_100g                 | 月桂酸（100g）          |
+| myristic-acid\_100g               | 肉豆蔻酸（100g）         |
+| palmitic-acid\_100g               | 棕榈酸（100g）          |
+| stearic-acid\_100g                | 硬脂酸（100g）          |
+| arachidic-acid\_100g              | 花生酸（100g）          |
+| behenic-acid\_100g                | 山嵛酸（100g）          |
+| lignoceric-acid\_100g             | 木酯酸（100g）          |
+| cerotic-acid\_100g                | 蜡酸（100g）           |
+| montanic-acid\_100g               | 蒙坦酸（100g）          |
+| melissic-acid\_100g               | 蜜蜂酸（100g）          |
+| unsaturated-fat\_100g             | 不饱和脂肪（100g）        |
+| monounsaturated-fat\_100g         | 单不饱和脂肪（100g）       |
+| omega-9-fat\_100g                 | Omega-9 脂肪酸（100g）  |
+| polyunsaturated-fat\_100g         | 多不饱和脂肪（100g）       |
+| omega-3-fat\_100g                 | Omega-3 脂肪酸（100g）  |
+| omega-6-fat\_100g                 | Omega-6 脂肪酸（100g）  |
+| alpha-linolenic-acid\_100g        | α-亚麻酸（100g）        |
+| eicosapentaenoic-acid\_100g       | EPA 二十碳五烯酸（100g）   |
+| docosahexaenoic-acid\_100g        | DHA 二十二碳六烯酸（100g）  |
+| linoleic-acid\_100g               | 亚油酸（100g）          |
+| arachidonic-acid\_100g            | 花生四烯酸（100g）        |
+| gamma-linolenic-acid\_100g        | γ-亚麻酸（100g）        |
+| dihomo-gamma-linolenic-acid\_100g | 二高 γ-亚麻酸（100g）     |
+| oleic-acid\_100g                  | 油酸（100g）           |
+| elaidic-acid\_100g                | 反油酸（100g）          |
+| gondoic-acid\_100g                | 廷酸（100g）           |
+| mead-acid\_100g                   | 米德酸（100g）          |
+| erucic-acid\_100g                 | 芥酸（100g）           |
+| nervonic-acid\_100g               | 神经酸（100g）          |
+| trans-fat\_100g                   | 反式脂肪（100g）         |
+| cholesterol\_100g                 | 胆固醇（100g）          |
+| carbohydrates\_100g               | 碳水化合物（100g）        |
+| sugars\_100g                      | 糖（100g）            |
+| added-sugars\_100g                | 添加糖（100g）          |
+| sucrose\_100g                     | 蔗糖（100g）           |
+| glucose\_100g                     | 葡萄糖（100g）          |
+| fructose\_100g                    | 果糖（100g）           |
+| galactose\_100g                   | 半乳糖（100g）          |
+| lactose\_100g                     | 乳糖（100g）           |
+| maltose\_100g                     | 麦芽糖（100g）          |
+| maltodextrins\_100g               | 麦芽糊精（100g）         |
+| starch\_100g                      | 淀粉（100g）           |
+| polyols\_100g                     | 多元醇（100g）          |
+| erythritol\_100g                  | 赤藓糖醇（100g）         |
+| fiber\_100g                                            | 膳食纤维（100g）          |
+| soluble-fiber\_100g                                    | 可溶性纤维（100g）         |
+| insoluble-fiber\_100g                                  | 不溶性纤维（100g）         |
+| proteins\_100g                                         | 蛋白质（100g）           |
+| casein\_100g                                           | 酪蛋白（100g）           |
+| serum-proteins\_100g                                   | 血清蛋白（100g）          |
+| nucleotides\_100g                                      | 核苷酸（100g）           |
+| salt\_100g                                             | 盐（100g）             |
+| added-salt\_100g                                       | 添加盐（100g）           |
+| sodium\_100g                                           | 钠（100g）             |
+| alcohol\_100g                                          | 酒精（100g）            |
+| vitamin-a\_100g                                        | 维生素 A（100g）         |
+| beta-carotene\_100g                                    | β-胡萝卜素（100g）        |
+| vitamin-d\_100g                                        | 维生素 D（100g）         |
+| vitamin-e\_100g                                        | 维生素 E（100g）         |
+| vitamin-k\_100g                                        | 维生素 K（100g）         |
+| vitamin-c\_100g                                        | 维生素 C（100g）         |
+| vitamin-b1\_100g                                       | 维生素 B1（100g）        |
+| vitamin-b2\_100g                                       | 维生素 B2（100g）        |
+| vitamin-pp\_100g                                       | 烟酸（PP，100g）         |
+| vitamin-b6\_100g                                       | 维生素 B6（100g）        |
+| vitamin-b9\_100g                                       | 维生素 B9（叶酸）（100g）    |
+| folates\_100g                                          | 叶酸总量（100g）          |
+| vitamin-b12\_100g                                      | 维生素 B12（100g）       |
+| biotin\_100g                                           | 生物素（100g）           |
+| pantothenic-acid\_100g                                 | 泛酸（100g）            |
+| silica\_100g                                           | 二氧化硅（100g）          |
+| bicarbonate\_100g                                      | 碳酸氢盐（100g）          |
+| potassium\_100g                                        | 钾（100g）             |
+| chloride\_100g                                         | 氯（100g）             |
+| calcium\_100g                                          | 钙（100g）             |
+| phosphorus\_100g                                       | 磷（100g）             |
+| iron\_100g                                             | 铁（100g）             |
+| magnesium\_100g                                        | 镁（100g）             |
+| zinc\_100g                                             | 锌（100g）             |
+| copper\_100g                                           | 铜（100g）             |
+| manganese\_100g                                        | 锰（100g）             |
+| fluoride\_100g                                         | 氟（100g）             |
+| selenium\_100g                                         | 硒（100g）             |
+| chromium\_100g                                         | 铬（100g）             |
+| molybdenum\_100g                                       | 钼（100g）             |
+| iodine\_100g                                           | 碘（100g）             |
+| caffeine\_100g                                         | 咖啡因（100g）           |
+| taurine\_100g                                          | 牛磺酸（100g）           |
+| methylsulfonylmethane\_100g                            | MSM（甲磺酰甲烷，100g）     |
+| ph\_100g                                               | pH 值（100g）          |
+| fruits-vegetables-nuts\_100g                           | 果蔬坚果（100g）          |
+| fruits-vegetables-nuts-dried\_100g                     | 干果蔬坚果（100g）         |
+| fruits-vegetables-nuts-estimate\_100g                  | 果蔬坚果估值（100g）        |
+| fruits-vegetables-nuts-estimate-from-ingredients\_100g | 根据配料估计的果蔬坚果含量（100g） |
+| collagen-meat-protein-ratio\_100g                      | 胶原-肉类蛋白比例（100g）     |
+| cocoa\_100g                                            | 可可含量（100g）          |
+| chlorophyl\_100g                                       | 叶绿素（100g）           |
+| carbon-footprint\_100g                                 | 碳足迹（100g）           |
+| carbon-footprint-from-meat-or-fish\_100g               | 肉类/鱼类来源碳足迹（100g）    |
+| nutrition-score-fr\_100g                               | 法国营养评分（100g）        |
+| nutrition-score-uk\_100g                               | 英国营养评分（100g）        |
+| glycemic-index\_100g                                   | 升糖指数（100g）          |
+| water-hardness\_100g                                   | 水硬度（100g）           |
+| choline\_100g                                          | 胆碱（100g）            |
+| phylloquinone\_100g                                    | 维生素 K1（100g）        |
+| beta-glucan\_100g                                      | β-葡聚糖（100g）         |
+| inositol\_100g                                         | 肌醇（100g）            |
+| carnitine\_100g                                        | 肉碱（100g）            |
+| sulphate\_100g                                         | 硫酸盐（100g）           |
+| nitrate\_100g                                          | 硝酸盐（100g）           |
+| acidity\_100g                                          | 酸度（100g）            |
+| carbohydrates-total\_100g                              | 总碳水化合物（100g）        |

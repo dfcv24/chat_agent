@@ -1,0 +1,7 @@
+id,name,age,email,department,salary,created_at,is_active,city,phone
+1,张三,25,zhangsan@example.com,技术部,8000.50,2025-01-01 10:00:00,true,北京,13812345678
+2,李四,30,lisi@example.com,产品部,9500.00,2025-01-02 11:00:00,true,上海,13987654321
+3,王五,28,wangwu@example.com,设计部,7500.75,2025-01-03 09:30:00,false,广州,13765432109
+4,赵六,35,zhaoliu@example.com,技术部,12000.00,2025-01-04 14:15:00,true,深圳,13654321098
+5,钱七,27,qianqi@example.com,市场部,6800.25,2025-01-05 16:20:00,true,杭州,13543210987
+6,孙八,32,sunba@example.com,人事部,7200.00,2025-01-06 08:45:00,false,成都,13432109876
