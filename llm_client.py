@@ -64,6 +64,9 @@ class LLMClient:
         """
         if not self.is_available:
             return None
+        extra_body = {
+            "enable_thinking": False
+        }
         
         try:
             response = self._client.chat.completions.create(
@@ -71,7 +74,8 @@ class LLMClient:
                 messages=messages,
                 max_tokens=max_tokens or self.config.MAX_TOKENS,
                 temperature=temperature if temperature is not None else self.config.TEMPERATURE,
-                top_p=self.config.TOP_P
+                top_p=self.config.TOP_P,
+                extra_body=extra_body
             )
             
             return response.choices[0].message.content.strip()

@@ -123,7 +123,8 @@ class ChatBot:
             messages = self.get_chat_messages(user_input)
             
             response = self.llm_client.chat_completion(messages)
-            
+            self.add_to_history(user_input, response)
+            self.save_chat_history()
             if response:
                 return response
             else:

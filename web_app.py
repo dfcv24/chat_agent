@@ -1,20 +1,16 @@
 from fastapi import FastAPI, Request, HTTPException, WebSocket, WebSocketDisconnect
-from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 import uvicorn
-import json
 import os
 import requests
 import hashlib
-import base64
-import asyncio
 from datetime import datetime
 from typing import List, Dict, Optional
 
 from chatbot import ChatBot
-from config import ChatConfig
 from event_system import ChatEventSystem, EventType, ChatEvent
 
 # 创建FastAPI应用
@@ -201,9 +197,6 @@ async def chat(message: ChatMessage):
             response = "聊天历史已清除"
         else:
             response = bot.get_response(user_input)
-            # 保存到历史记录
-            bot.add_to_history(user_input, response)
-            bot.save_chat_history()
         
         # 生成语音
         audio_url = synthesize_speech(response)
@@ -298,6 +291,7 @@ async def text_to_speech(request: dict):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"语音合成时发生错误: {str(e)}")
 
+# 新入口
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     """WebSocket端点 - 实现实时双向通信"""

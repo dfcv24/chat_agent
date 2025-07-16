@@ -173,7 +173,7 @@ class ChatEventSystem:
     async def _auto_output_task(self):
         """主动输出任务"""
         while True:
-            await asyncio.sleep(10)  # 每10秒检查一次
+            await asyncio.sleep(3600)  # 每3600秒检查一次
             
             if not self.auto_output_enabled:
                 continue
@@ -193,8 +193,7 @@ class ChatEventSystem:
         time_since_last_input = (datetime.now() - self.last_user_input_time).total_seconds()
         
         # 如果超过阈值且队列为空，可以主动输出
-        return (time_since_last_input > self.idle_threshold and 
-                self.event_queue.empty())
+        return (time_since_last_input > self.idle_threshold)
     
     async def _generate_auto_message(self) -> Optional[str]:
         """生成主动输出的消息"""
