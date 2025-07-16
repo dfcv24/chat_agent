@@ -439,6 +439,7 @@ class VectorDBManager:
     def save_chat_history_archive(self, chat_history: List[Dict], archive_timestamp: str = None) -> bool:
         """
         将聊天历史保存到向量数据库作为归档
+        先用大模型分析对话内容，按主题分组后再保存
         
         Args:
             chat_history: 聊天历史列表
@@ -455,45 +456,153 @@ class VectorDBManager:
             archive_timestamp = datetime.now().isoformat()
         
         try:
-            # 批量保存聊天记录
-            success_count = 0
+            # 先分析聊天历史内容
+            analyzed_segments = self._analyze_chat_history(chat_history)
+            if not analyzed_segments:
+                print("⚠️  聊天历史解析失败，跳过归档")
+                return True
             
-            for i, chat_item in enumerate(chat_history):
-                # 构建对话内容
-                conversation_text = f"用户: {chat_item.get('user', '')}\n助手: {chat_item.get('bot', '')}"
+            # 保存分析后的段落
+            success_count = 0
+            total_segments = len(analyzed_segments)
+            
+            for i, segment in enumerate(analyzed_segments):
+                # 构建段落内容
+                content = f"主题总结: {segment['topic']}\n\n详细对话:\n{segment['summary']}"
                 
-                # 元数据
+                # 构建元数据
                 metadata = {
-                    "original_timestamp": chat_item.get("timestamp", ""),
                     "archive_timestamp": archive_timestamp,
-                    "conversation_index": i,
-                    "total_conversations": len(chat_history),
-                    "user_message": chat_item.get('user', ''),
-                    "bot_response": chat_item.get('bot', '')
+                    "segment_index": i,
+                    "total_segments": total_segments,
+                    "topic": segment['topic'],
+                    "summary": segment['summary'],
+                    "conversation_count": segment['conversation_count'],
+                    "start_time": segment.get('start_time', ''),
+                    "end_time": segment.get('end_time', ''),
+                    "keywords": segment.get('keywords', []),
+                    "importance_score": segment.get('importance_score', 0.5)
                 }
                 
                 # 保存到向量数据库
                 result = self.save_data(
-                    content=conversation_text,
-                    content_type="chat_archive",
+                    content=content,
+                    content_type="chat_topic_archive",
                     metadata=metadata
                 )
                 
                 if result:
                     success_count += 1
+                    print(f"✅ 保存主题段落 {i+1}/{total_segments}: {segment['topic']}")
                 else:
-                    print(f"⚠️  保存第{i+1}条对话失败")
+                    print(f"⚠️  保存主题段落 {i+1}/{total_segments} 失败: {segment['topic']}")
             
-            print(f"✅ 成功归档 {success_count}/{len(chat_history)} 条聊天记录到向量数据库")
-            return success_count == len(chat_history)
+            print(f"✅ 成功归档 {success_count}/{total_segments} 个主题段落到向量数据库")
+            return success_count == total_segments
             
         except Exception as e:
             print(f"❌ 归档聊天历史失败: {e}")
             return False
+    
+    def _analyze_chat_history(self, chat_history: List[Dict]) -> List[Dict]:
+        """
+        使用大模型分析聊天历史，提取主题和总结
+        
+        Args:
+            chat_history: 聊天历史列表（单一消息格式）
+            
+        Returns:
+            分析后的段落列表
+        """
+        if not self.embedding_client:
+            print("⚠️  没有可用的AI客户端进行分析")
+            return []
+        
+        try:
+            # 构建聊天历史文本 - 适配新的单一消息格式
+            conversation_text = ""
+            current_user_msg = ""
+            
+            for i, chat_item in enumerate(chat_history):
+                timestamp = chat_item.get("timestamp", f"消息{i+1}")
+                
+                if "user" in chat_item:
+                    current_user_msg = chat_item["user"]
+                    conversation_text += f"[{timestamp}]\n用户: {current_user_msg}\n"
+                elif "assistant" in chat_item or "assistent" in chat_item:
+                    assistant_msg = chat_item.get("assistant", chat_item.get("assistent", ""))
+                    conversation_text += f"助手: {assistant_msg}\n\n"
+            
+            if not conversation_text.strip():
+                print("⚠️  没有有效的对话内容可分析")
+                return []
+            
+            # 构建分析提示
+            analysis_prompt = f"""
+请分析以下聊天历史，将对话按主题分组并总结。要求：
+
+1. 识别对话中的主要话题和主题转换点
+2. 将相关对话分组到同一主题下
+3. 为每个主题生成简洁的总结
+4. 提取关键词
+5. 评估每个主题的重要性（0-1分）
+
+聊天历史：
+{conversation_text}
+
+请按以下JSON格式返回分析结果：
+{{
+    "segments": [
+        {{
+            "topic": "主题名称",
+            "summary": "主题总结（50字以内）",
+            "content": "相关对话内容",
+            "keywords": ["关键词1", "关键词2"],
+            "importance_score": 0.8,
+            "conversation_count": 3,
+            "start_time": "开始时间",
+            "end_time": "结束时间"
+        }}
+    ]
+}}
+"""
+            
+            # 调用大模型分析
+            response = self.embedding_client.chat.completions.create(
+                model=getattr(self.config, 'MEMORY_MODEL', 'Qwen/Qwen3-8B'),
+                messages=[
+                    {"role": "system", "content": "你是一个专业的对话分析师，擅长分析和总结对话内容。请仔细分析对话并按要求返回JSON格式的结果。"},
+                    {"role": "user", "content": analysis_prompt}
+                ],
+                temperature=0.3,
+                max_tokens=4000
+            )
+            
+            # 解析响应
+            analysis_text = response.choices[0].message.content
+            
+            # 尝试提取JSON部分
+            import re
+            json_match = re.search(r'\{.*\}', analysis_text, re.DOTALL)
+            if json_match:
+                analysis_json = json.loads(json_match.group())
+                segments = analysis_json.get('segments', [])
+                
+                print(f"✅ 聊天历史分析完成，识别出 {len(segments)} 个主题段落")
+                return segments
+            else:
+                print("⚠️  无法解析大模型返回的分析结果")
+                print(f"原始返回: {analysis_text[:200]}...")
+                return []
+                
+        except Exception as e:
+            print(f"⚠️  聊天历史分析失败: {e}")
+            return []
 
     def search_related_chat_history(self, query: str, limit: int = 5) -> List[Dict]:
         """
         搜索与查询相关的历史聊天记录
+        优先搜索主题化的归档，然后搜索原始归档
         
         Args:
             query: 查询文本
@@ -511,88 +620,59 @@ class VectorDBManager:
             if query_embedding is None:
                 return []
             
-            # 搜索相关的聊天归档记录
+            # 搜索参数
             search_params = {
-                "metric_type": "COSINE",  # 内积相似度
+                "metric_type": "COSINE",
                 "params": {"nprobe": 10}
             }
             
-            # 只搜索聊天归档类型的记录
-            expr = 'content_type == "chat_archive"'
+            # 搜索主题化归档
+            topic_results = self._search_topic_archives(query_embedding, search_params, limit)
             
+            return topic_results[:limit]
+            
+        except Exception as e:
+            print(f"⚠️  搜索相关聊天历史失败: {e}")
+            return []
+    
+    def _search_topic_archives(self, query_embedding, search_params, limit):
+        """搜索主题化的聊天归档"""
+        try:
+            expr = 'content_type == "chat_topic_archive"'
             results = self.collection.search(
                 data=[query_embedding],
                 anns_field="embedding",
                 param=search_params,
-                limit=limit * 2,  # 搜索更多结果以便过滤
+                limit=limit,
                 expr=expr,
                 output_fields=["content", "metadata", "timestamp"]
             )
             
-            # 格式化搜索结果
             chat_records = []
             similarity_threshold = getattr(self.config, 'HISTORY_SIMILARITY_THRESHOLD', 0.7)
             
             if results and len(results) > 0:
                 for hit in results[0]:
-                    try:
-                        metadata = json.loads(hit.entity.get('metadata', '{}'))
-                        
-                        # 提取对话信息
-                        chat_record = {
-                            'content': hit.entity.get('content', ''),
-                            'score': hit.score,
-                            'timestamp': hit.entity.get('timestamp', ''),
-                            'original_timestamp': metadata.get('original_timestamp', ''),
-                            'user_message': metadata.get('user_message', ''),
-                            'bot_response': metadata.get('bot_response', ''),
-                            'archive_timestamp': metadata.get('archive_timestamp', '')
-                        }
-                        
-                        # 只返回相关度足够高的记录
-                        if hit.score > similarity_threshold:
+                    if hit.score > similarity_threshold:
+                        try:
+                            metadata = json.loads(hit.entity.get('metadata', '{}'))
+                            chat_record = {
+                                'content': hit.entity.get('content', ''),
+                                'score': hit.score,
+                                'timestamp': hit.entity.get('timestamp', ''),
+                                'archive_type': 'topic',
+                                'topic': metadata.get('topic', ''),
+                                'summary': metadata.get('summary', ''),
+                                'keywords': metadata.get('keywords', []),
+                                'importance_score': metadata.get('importance_score', 0.5),
+                                'conversation_count': metadata.get('conversation_count', 0)
+                            }
                             chat_records.append(chat_record)
-                            
-                        # 限制返回数量
-                        if len(chat_records) >= limit:
-                            break
-                            
-                    except Exception as e:
-                        print(f"⚠️  解析搜索结果失败: {e}")
-                        continue
+                        except Exception as e:
+                            print(f"⚠️  解析主题归档结果失败: {e}")
+                            continue
             
             return chat_records
-            
         except Exception as e:
-            print(f"⚠️  搜索相关聊天历史失败: {e}")
+            print(f"⚠️  搜索主题归档失败: {e}")
             return []
-
-
-# 全局向量数据库管理器实例
-_global_vector_db = None
-
-
-def get_vector_db_manager(config=None) -> VectorDBManager:
-    """
-    获取全局向量数据库管理器实例
-    
-    Args:
-        config: 配置对象
-        
-    Returns:
-        向量数据库管理器实例
-    """
-    global _global_vector_db
-    
-    if _global_vector_db is None:
-        _global_vector_db = VectorDBManager(config)
-    
-    return _global_vector_db
-
-
-def reset_vector_db_manager():
-    """重置全局向量数据库管理器"""
-    global _global_vector_db
-    if _global_vector_db:
-        _global_vector_db.close()
-    _global_vector_db = None

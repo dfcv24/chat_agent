@@ -48,7 +48,7 @@ class ChatConfig:
     # 向量数据库设置
     MILVUS_HOST = os.getenv("MILVUS_HOST", "localhost")
     MILVUS_PORT = os.getenv("MILVUS_PORT", "19530")
-    MILVUS_COLLECTION_NAME = os.getenv("MILVUS_COLLECTION_NAME", "chat_agent_test")
+    MILVUS_COLLECTION_NAME = os.getenv("MILVUS_COLLECTION_NAME", "chat_memory")
     
     # 聊天历史归档设置
     ARCHIVE_INTERVAL_HOURS = 6  # 6小时无新内容后归档

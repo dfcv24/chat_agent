@@ -7,7 +7,7 @@ from typing import List, Dict
 from config import ChatConfig
 from llm_client import get_llm_client
 from prompts.system_prompt import CHAT_PROMPT
-from vector_db_manager import get_vector_db_manager
+from vector_db_manager import VectorDBManager
 
 class ChatBot:
     def __init__(self):
@@ -20,7 +20,7 @@ class ChatBot:
         self.llm_client = get_llm_client(self.config)
         
         # 初始化向量数据库管理器
-        self.vector_db = get_vector_db_manager(self.config)
+        self.vector_db = VectorDBManager(self.config)
         
         # 聊天运行状态
         self.running = False
@@ -52,12 +52,11 @@ class ChatBot:
         except Exception as e:
             print(f"⚠️  保存聊天历史失败: {e}")
     
-    def add_to_history(self, user_message: str, bot_response: str):
+    def add_to_history(self, role: str, message: str):
         """添加对话到历史记录"""
         self.chat_history.append({
             "timestamp": datetime.now().isoformat(),
-            "user": user_message,
-            "bot": bot_response
+            role: message,
         })
         
         # 限制历史记录长度
@@ -82,20 +81,14 @@ class ChatBot:
         if related_history:
             context_content = "📚 参考相关的历史对话:\n"
             for i, record in enumerate(related_history, 1):
-                # 格式化历史对话
-                user_msg = record.get('user_message', '')
-                bot_msg = record.get('bot_response', '')
-                original_time = record.get('original_timestamp', '')
+                topic = record.get('topic', '未知主题')
+                summary = record.get('summary', '')
+                content_short = record.get('content', '')[:400] + "..." if len(record.get('content', '')) > 400 else record.get('content', '')
                 similarity = record.get('score', 0)
                 
-                if user_msg and bot_msg:
-                    # 截断过长的消息
-                    user_msg_short = user_msg[:100] + "..." if len(user_msg) > 100 else user_msg
-                    bot_msg_short = bot_msg[:150] + "..." if len(bot_msg) > 150 else bot_msg
-                    
-                    context_content += f"\n{i}. 历史对话 ({original_time[:10] if original_time else '时间未知'}, 相似度: {similarity:.2f}):\n"
-                    context_content += f"   用户: {user_msg_short}\n"
-                    context_content += f"   助手: {bot_msg_short}\n"
+                context_content += f"\n{i}. 主题: {topic} (相似度: {similarity:.2f}):\n"
+                context_content += f"   总结: {summary}\n"
+                context_content += f"   内容: {content_short}\n"
             
             context_content += "\n💡 请结合这些历史对话的上下文来理解用户的意图，并提供更准确和连贯的回答。\n"
             
@@ -103,11 +96,15 @@ class ChatBot:
             print("搜索到的相关历史上下文", context_content)
             messages.append({"role": "system", "content": context_content})
         
-        # 添加当前会话的历史对话（最近几轮）
-        recent_history = self.chat_history[-5:]  # 只取最近5轮对话
+        # 添加当前会话的历史对话（最近几轮）- 修正为单一消息格式
+        recent_history = self.chat_history[-10:]  # 取最近10条消息
         for item in recent_history:
-            messages.append({"role": "user", "content": item["user"]})
-            messages.append({"role": "assistant", "content": item["bot"]})
+            # 检查消息是否包含 user 或 assistant 字段
+            if "user" in item:
+                messages.append({"role": "user", "content": item["user"]})
+            elif "assistant" in item:
+                content = item.get("assistant", item.get("assistant", ""))
+                messages.append({"role": "assistant", "content": content})
         
         # 添加当前用户输入
         messages.append({"role": "user", "content": user_input})
@@ -120,11 +117,15 @@ class ChatBot:
             if not self.llm_client.is_available:
                 return "❌ 抱歉，AI服务暂时不可用，请检查配置。"
             
-            messages = self.get_chat_messages(user_input)
-            
-            response = self.llm_client.chat_completion(messages)
-            self.add_to_history(user_input, response)
+            self.add_to_history("user", user_input)
             self.save_chat_history()
+
+            messages = self.get_chat_messages(user_input)            
+            response = self.llm_client.chat_completion(messages)
+            
+            self.add_to_history("assistant", response)
+            self.save_chat_history()
+            
             if response:
                 return response
             else:
@@ -232,9 +233,6 @@ class ChatBot:
         response = self.get_response(user_input)
         print(response)
         
-        # 保存到历史记录
-        self.add_to_history(user_input, response)
-        self.save_chat_history()
         return response
     
     def get_last_chat_time(self) -> datetime:
