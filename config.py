@@ -23,7 +23,7 @@ class ChatConfig:
     MAX_TOKENS = 2000
     TEMPERATURE = 0.9
     TOP_P = 0.9  # Top-p采样
-    MAX_HISTORY_LENGTH = 10  # 保留的对话历史条数
+    MAX_HISTORY_LENGTH = 100  # 保留的对话历史条数
     
     # 文件路径
     PROMPT_FILE = "prompts/system_prompt.txt"
@@ -58,13 +58,10 @@ class ChatConfig:
     # 历史搜索设置
     ENABLE_HISTORY_SEARCH = True  # 是否启用历史搜索
     HISTORY_SEARCH_LIMIT = 3  # 搜索历史记录的数量限制
-    HISTORY_SIMILARITY_THRESHOLD = 0.7  # 相似度阈值
+    HISTORY_SIMILARITY_THRESHOLD = 0.5  # 相似度阈值
     
     # Embedding设置 - 使用硅基流动的embedding API
     EMBEDDING_MODEL_NAME = os.getenv("EMBEDDING_MODEL", "BAAI/bge-m3")  # 硅基流动支持的embedding模型
     EMBEDDING_DIM = int(os.getenv("EMBEDDING_DIM", "1024"))  # bge-m3的嵌入维度是1024
     # 或者qwen-embedding-8b，先用bge-m3，后续可以切换到qwen-embedding-8b
-    
-    # 向量搜索设置
-    VECTOR_SEARCH_LIMIT = int(os.getenv("VECTOR_SEARCH_LIMIT", "5"))
-    SIMILARITY_THRESHOLD = float(os.getenv("SIMILARITY_THRESHOLD", "0.7"))
+

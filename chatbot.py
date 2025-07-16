@@ -83,7 +83,7 @@ class ChatBot:
             for i, record in enumerate(related_history, 1):
                 topic = record.get('topic', '未知主题')
                 summary = record.get('summary', '')
-                content_short = record.get('content', '')[:400] + "..." if len(record.get('content', '')) > 400 else record.get('content', '')
+                content_short = record.get('raw_content', '')[:400] + "..." if len(record.get('raw_content', '')) > 400 else record.get('raw_content', '')
                 similarity = record.get('score', 0)
                 
                 context_content += f"\n{i}. 主题: {topic} (相似度: {similarity:.2f}):\n"
@@ -173,38 +173,6 @@ class ChatBot:
         print(help_text)
         return help_text
     
-    def simple_chat(self):
-        """简单的同步聊天模式"""
-        print(f"\n{self.config.WELCOME_MESSAGE}")
-        print("� 提示：直接输入你的问题或想说的话，输入 '退出' 结束聊天")
-        
-        self.running = True
-        
-        try:
-            while self.running:
-                try:
-                    # 获取用户输入
-                    user_input = input(f"\n😊 你: ").strip()
-                    
-                    if not user_input:
-                        continue
-                    
-                    # 处理用户消息
-                    self.process_message(user_input)
-                        
-                except KeyboardInterrupt:
-                    print(f"\n\n嘿嘿～那我就不打扰你啦，记得想我哦～👋 {self.config.BOT_NAME}先走啦～")
-                    break
-                except Exception as e:
-                    print(f"\n❌ 处理消息时发生错误: {e}")
-                    
-        except Exception as e:
-            print(f"\n❌ 程序发生错误: {e}")
-        finally:
-            self.running = False
-            self.stop_archive_task()  # 停止归档任务
-            print("\n👋 聊天结束")
-    
     def process_message(self, user_input: str):
         """处理用户消息"""
         # 检查特殊命令
@@ -229,10 +197,7 @@ class ChatBot:
             return help_text
         
         # 获取AI回复
-        print(f"\n🤖 {self.config.BOT_NAME}: ", end="", flush=True)
-        response = self.get_response(user_input)
-        print(response)
-        
+        response = self.get_response(user_input)        
         return response
     
     def get_last_chat_time(self) -> datetime:
@@ -367,6 +332,38 @@ class ChatBot:
         finally:
             self.running = False
             self.stop_archive_task()  # 停止归档任务
+    
+    def simple_chat(self):
+        """简单的同步聊天模式"""
+        print(f"\n{self.config.WELCOME_MESSAGE}")
+        print("� 提示：直接输入你的问题或想说的话，输入 '退出' 结束聊天")
+        
+        self.running = True
+        
+        try:
+            while self.running:
+                try:
+                    # 获取用户输入
+                    user_input = input(f"\n😊 你: ").strip()
+                    
+                    if not user_input:
+                        continue
+                    
+                    # 处理用户消息
+                    self.process_message(user_input)
+                        
+                except KeyboardInterrupt:
+                    print(f"\n\n嘿嘿～那我就不打扰你啦，记得想我哦～👋 {self.config.BOT_NAME}先走啦～")
+                    break
+                except Exception as e:
+                    print(f"\n❌ 处理消息时发生错误: {e}")
+                    
+        except Exception as e:
+            print(f"\n❌ 程序发生错误: {e}")
+        finally:
+            self.running = False
+            self.stop_archive_task()  # 停止归档任务
+            print("\n👋 聊天结束")
 
 if __name__ == "__main__":
     bot = ChatBot()

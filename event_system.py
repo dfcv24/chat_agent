@@ -103,16 +103,6 @@ class ChatEventSystem:
         self.last_user_input_time = datetime.now()
         user_input = event.content.strip()
         
-        # 检查特殊命令
-        if user_input.lower() in ['/help', 'help', '帮助']:
-            await self.emit_bot_output("这里是帮助信息...")
-            return
-        
-        if user_input.lower() in ['/clear', 'clear', '清除']:
-            self.chatbot.clear_history()
-            await self.emit_bot_output("聊天历史已清除")
-            return
-        
         # 发出思考事件
         await self.emit_thinking("正在思考中...")
         
@@ -134,7 +124,7 @@ class ChatEventSystem:
         responses = []
         
         # 基础回复
-        main_response = await asyncio.to_thread(self.chatbot.get_response, user_input)
+        main_response = await asyncio.to_thread(self.chatbot.process_message, user_input)
         responses.append(main_response)
         
         # 根据内容可能产生额外回复

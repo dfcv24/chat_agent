@@ -131,9 +131,9 @@ class VectorDBManager:
         # 定义字段
         fields = [
             FieldSchema(name="id", dtype=DataType.VARCHAR, is_primary=True, max_length=128),
-            FieldSchema(name="content", dtype=DataType.VARCHAR, max_length=65535),
+            FieldSchema(name="content", dtype=DataType.VARCHAR, max_length=1000),
             FieldSchema(name="content_type", dtype=DataType.VARCHAR, max_length=50),
-            FieldSchema(name="metadata", dtype=DataType.VARCHAR, max_length=1000),
+            FieldSchema(name="metadata", dtype=DataType.VARCHAR, max_length=65535),
             FieldSchema(name="timestamp", dtype=DataType.VARCHAR, max_length=50),
             FieldSchema(name="embedding", dtype=DataType.FLOAT_VECTOR, dim=self.dim)
         ]
@@ -468,7 +468,7 @@ class VectorDBManager:
             
             for i, segment in enumerate(analyzed_segments):
                 # 构建段落内容
-                content = f"主题总结: {segment['topic']}\n\n详细对话:\n{segment['summary']}"
+                content = f"主题: {segment['topic']}\n\n总结:\n{segment['summary']}"
                 
                 # 构建元数据
                 metadata = {
@@ -477,6 +477,7 @@ class VectorDBManager:
                     "total_segments": total_segments,
                     "topic": segment['topic'],
                     "summary": segment['summary'],
+                    "raw_content": segment['raw_content'],
                     "conversation_count": segment['conversation_count'],
                     "start_time": segment.get('start_time', ''),
                     "end_time": segment.get('end_time', ''),
@@ -556,7 +557,7 @@ class VectorDBManager:
         {{
             "topic": "主题名称",
             "summary": "主题总结（50字以内）",
-            "content": "相关对话内容",
+            "raw_content": "相关对话内容原文",
             "keywords": ["关键词1", "关键词2"],
             "importance_score": 0.8,
             "conversation_count": 3,
@@ -566,10 +567,10 @@ class VectorDBManager:
     ]
 }}
 """
-            
+            print("🔍 开始分析聊天历史...")
             # 调用大模型分析
             response = self.embedding_client.chat.completions.create(
-                model=getattr(self.config, 'MEMORY_MODEL', 'Qwen/Qwen3-8B'),
+                model=getattr(self.config, 'CHAT_MODEL', 'Qwen/Qwen3-14B'),
                 messages=[
                     {"role": "system", "content": "你是一个专业的对话分析师，擅长分析和总结对话内容。请仔细分析对话并按要求返回JSON格式的结果。"},
                     {"role": "user", "content": analysis_prompt}
@@ -577,6 +578,7 @@ class VectorDBManager:
                 temperature=0.3,
                 max_tokens=4000
             )
+            print("🔍 分析聊天历史完成，正在处理结果...")
             
             # 解析响应
             analysis_text = response.choices[0].message.content
@@ -647,22 +649,23 @@ class VectorDBManager:
                 expr=expr,
                 output_fields=["content", "metadata", "timestamp"]
             )
-            
+
             chat_records = []
             similarity_threshold = getattr(self.config, 'HISTORY_SIMILARITY_THRESHOLD', 0.7)
             
             if results and len(results) > 0:
                 for hit in results[0]:
-                    if hit.score > similarity_threshold:
+                    if hit.distance > similarity_threshold:
                         try:
                             metadata = json.loads(hit.entity.get('metadata', '{}'))
                             chat_record = {
                                 'content': hit.entity.get('content', ''),
-                                'score': hit.score,
+                                'score': hit.distance,
                                 'timestamp': hit.entity.get('timestamp', ''),
                                 'archive_type': 'topic',
                                 'topic': metadata.get('topic', ''),
                                 'summary': metadata.get('summary', ''),
+                                "raw_content": metadata.get('raw_content', ''),
                                 'keywords': metadata.get('keywords', []),
                                 'importance_score': metadata.get('importance_score', 0.5),
                                 'conversation_count': metadata.get('conversation_count', 0)
